@@ -1,0 +1,99 @@
+# Import necessary libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the data
+data = pd.read_csv('/path/to/your/data.csv')
+
+# Convert 'order_date' from object to datetime
+data['order_date'] = pd.to_datetime(data['order_date'])
+
+# Data Visualization
+
+# Sales over time
+sales_over_time = data.groupby('order_date')['sales'].sum().reset_index()
+plt.figure(figsize=(10, 6))
+plt.plot(sales_over_time['order_date'], sales_over_time['sales'])
+plt.title('Sales Over Time')
+plt.xlabel('Order Date')
+plt.ylabel('Sales')
+plt.show()
+
+# Sales by category
+sales_by_category = data.groupby('category')['sales'].sum().reset_index()
+plt.figure(figsize=(10, 6))
+sns.barplot(x='category', y='sales', data=sales_by_category)
+plt.title('Sales by Category')
+plt.xlabel('Category')
+plt.ylabel('Sales')
+plt.show()
+
+# Profit by region
+profit_by_region = data.groupby('region')['profit'].sum().reset_index()
+plt.figure(figsize=(10, 6))
+sns.barplot(x='region', y='profit', data=profit_by_region)
+plt.title('Profit by Region')
+plt.xlabel('Region')
+plt.ylabel('Profit')
+plt.show()
+
+# Sales vs. Profit
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='sales', y='profit', data=data)
+plt.title('Sales vs. Profit')
+plt.xlabel('Sales')
+plt.ylabel('Profit')
+plt.show()
+
+# Customer Segmentation (RFM Analysis)
+
+# Calculate Recency, Frequency and Monetary value for each customer
+snapshot_date = data['order_date'].max() + pd.Timedelta(days=1) 
+rfm_data = data.groupby(['customer_id']).agg({
+    'order_date': lambda x: (snapshot_date - x.max()).days,
+    'order_id': 'count',
+    'sales': 'sum'
+})
+
+# Rename the columns
+rfm_data.rename(columns={'order_date': 'Recency',
+                         'order_id': 'Frequency',
+                         'sales': 'MonetaryValue'}, inplace=True)
+
+# Create a spend quartile with 1= highest value
+rfm_data['R'] = pd.qcut(rfm_data['Recency'], 4, labels = list(range(4, 0, -1)))
+rfm_data['F'] = pd.qcut(rfm_data['Frequency'].rank(method="first"), 4, labels=list(range(1, 5)))
+rfm_data['M'] = pd.qcut(rfm_data['MonetaryValue'], 4, labels=list(range(1, 5)))
+
+# Calculate RFM_Score
+rfm_data['RFM_Score'] = rfm_data[['R', 'F', 'M']].sum(axis=1)
+
+# Define rfm_level function
+def rfm_level(df):
+    if np.bool(df['RFM_Score'] >= 10):
+        return 'High Value Customer'
+    elif np.bool((df['RFM_Score'] < 10) & (df['RFM_Score'] >= 6)):
+        return 'Mid Value Customer'
+    else:
+        return 'Low Value Customer'
+
+# Create a new variable RFM_Level
+rfm_data['RFM_Level'] = rfm_data.apply(rfm_level, axis=1)
+# Import necessary libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Make sure 'order_date' is a datetime type
+data['order_date'] = pd.to_datetime(data['order_date'])
+
+# Resample the data on a monthly frequency
+monthly_data = data.resample('M', on='order_date').sum()
+
+# Plot the monthly sales
+plt.figure(figsize=(10, 6))
+plt.plot(monthly_data.index, monthly_data['sales'])
+plt.title('Monthly Sales Over Time')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.show()
